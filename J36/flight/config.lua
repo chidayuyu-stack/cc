@@ -39,8 +39,8 @@ return {
   maxSpeed=340,
   speedMargin=20,
   period=0.05,
-  rate={math.rad(60),math.rad(25),math.rad(40)}, -- roll, yaw, pitch
-  rateSlew={math.rad(360),math.rad(240),math.rad(300)}, -- Command ramp, deg/s^2.
+  rate={math.rad(60),math.rad(25),math.rad(48)}, -- roll, yaw, pitch
+  rateSlew={math.rad(360),math.rad(240),math.rad(360)}, -- Command ramp, deg/s^2.
   gain={2.0,1.6,2.6},
   integralGain={0.25,0.3,0.2},
   integralLimit=0.35, -- Fraction of each axis's acceleration limit.

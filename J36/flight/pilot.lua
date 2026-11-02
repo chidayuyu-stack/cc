@@ -183,7 +183,7 @@ local function write(outputs,surfaceOutputs)
 end
 local function draw()
   term.setCursorPos(1,1);term.clear()
-  print('THREE-ENGINE FIGHTER 2.4  '..(armed and 'ON' or 'OFF'))
+  print('THREE-ENGINE FIGHTER 2.5  '..(armed and 'ON' or 'OFF'))
   print('R: toggle engine ON/OFF')
   print('W/S: nose down/up   Q/E: yaw left/right')
   print('A/D: roll left/right')
