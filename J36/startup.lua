@@ -1,2 +1,3 @@
--- Optional: copy this file to the CC computer root after installing flight/.
-shell.run('/flight/pilot.lua')
+if fs.exists("flight/pilot.lua") then
+  shell.run("flight/pilot.lua")
+end

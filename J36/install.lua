@@ -6,6 +6,7 @@ local files = {
   {name = "aero.lua", marker = "sailCount ="},
 }
 local downloaded = {}
+local startupProgram
 
 if not http then
   error("HTTP API is disabled on this server.", 0)
@@ -26,6 +27,18 @@ for _, file in ipairs(files) do
   downloaded[file.name] = body
 end
 
+if not fs.exists("startup.lua") then
+  local response, failure = http.get(base .. "startup.lua", nil, true)
+  if not response then
+    error("Download failed for startup.lua: " .. tostring(failure), 0)
+  end
+  startupProgram = response.readAll()
+  response.close()
+  if not startupProgram or #startupProgram < 40 or not startupProgram:find("shell.run", 1, true) then
+    error("Invalid download for startup.lua", 0)
+  end
+end
+
 if fs.exists("flight") and not fs.isDir("flight") then
   error("A file named 'flight' already exists.", 0)
 end
@@ -34,6 +47,14 @@ for name, body in pairs(downloaded) do
   local handle = assert(fs.open(fs.combine("flight", name), "wb"))
   handle.write(body)
   handle.close()
+end
+if fs.exists("startup.lua") then
+  print("Keeping existing /startup.lua")
+else
+  local handle = assert(fs.open("startup.lua", "wb"))
+  handle.write(startupProgram)
+  handle.close()
+  print("Installed /startup.lua; the controller starts automatically on boot.")
 end
 
 print("Installed to /flight")
