@@ -1,0 +1,47 @@
+WATERDROP CHAIR: CABLE INPUT MAP
+
+Inputs on the Drive-By-Sable integrated flight sensor:
+  1  W       forward
+  2  S       backward
+  3  A       strafe left
+  4  D       strafe right
+  5  Q       yaw left
+  6  E       yaw right
+  7  R       up
+  8  F       down
+  9  Shift   gear up
+ 10  Ctrl    gear down
+ 11  Space   virtual-force master switch (OFF unless restoring saved task)
+  12  Z       start auto-survey
+  13  X       pause/resume auto-survey
+
+Either input method works:
+  * Click the linked typewriter hub and use the listed keys directly.
+  * Bind linked-typewriter signals to channels 1..13 above.
+
+Gears: 0, 34, 68, 102, 136, 170, 204, 238, 272, 306, 340 m/s.
+Release movement keys to brake immediately. Holding W and D is normalized
+to the selected gear, so the total velocity still never exceeds 340 m/s.
+Yaw is limited to 90 degrees/second. R/F vertical speed is limited to 18 m/s.
+
+The installed Create display link is adjacent to the CC computer and targets
+the Create Connected dashboard at row 1, writing all four rows (15 columns):
+  V080.0 F:ON       actual speed (m/s), virtual force
+  Y0120 G02/11     altitude, current/total gear
+  SCAN 3/17        task phase / current segment
+  P025% H120 R08   scan progress, cruise altitude, brush radius (chunks)
+Paused manual motion and return transit do not advance scan progress.
+
+Before starting an auto-survey, stop pilot.lua and run:
+  flight/setup.lua
+
+Enter the two opposite corners, the server simulation-distance chunk radius,
+and the cruise altitude. Press Z in flight to start. While paused, manual
+controls are available. Press X again to climb, return to the pause point,
+and continue the saved survey.
+
+Progress and the original route are saved every 2 seconds and at each
+waypoint/pause. Restarted tasks hover until X; Z does not discard saved
+unfinished work. See flight/README.md for recovery and setup details.
+
+Run "flight/pilot.lua check" in the computer shell for a read-only API check.
