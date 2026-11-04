@@ -3,7 +3,7 @@ local dir=fs.getDir(shell.getRunningProgram())
 local C=dofile(fs.combine(dir,'config.lua'))
 local M=dofile(fs.combine(dir,'core.lua'))
 local A=dofile(fs.combine(dir,'aero.lua'))
-local bus,busName,displayLink,displayName,owned,basis,origin,model,shipId
+local bus,busName,displayLink,displayName,lastDisplay,owned,basis,origin,model,shipId
 local aeroModel,pointOrigin
 local armed,quit=false,false
 local throttle=0
@@ -183,7 +183,7 @@ local function write(outputs,surfaceOutputs)
 end
 local function draw()
   term.setCursorPos(1,1);term.clear()
-  print('THREE-ENGINE FIGHTER 2.5  '..(armed and 'ON' or 'OFF'))
+  print('THREE-ENGINE FIGHTER 2.7  '..(armed and 'ON' or 'OFF'))
   print('R: toggle engine ON/OFF')
   print('W/S: nose down/up   Q/E: yaw left/right')
   print('A/D: roll left/right')
@@ -199,20 +199,33 @@ local function draw()
   print(string.format('Aero p %.3f F %.0f %.0f %.0f T %.0f %.0f %.0f',pressure,
     aeroForce[1],aeroForce[2],aeroForce[3],aeroTorque[1],aeroTorque[2],aeroTorque[3]))
   print(message)
-  print('Static sails add drag; lift scaling remains zero in Sable.')
+  print('Sable aero: sail/wing drag matrix plus pressure-scaled wing lift.')
   if displayLink then
-    local gear=math.floor(throttle*15+0.5)
-    local line=string.format('GEAR %02d/15   ALT %7.1f   SPD %6.1f m/s',
-      gear,altitude,speed)
-    local ok=pcall(function()
-      displayLink.setCursorPos(1,1)
-      displayLink.clearLine()
-      displayLink.write(line)
-      displayLink.update()
-    end)
-    if not ok then
-      displayLink=nil
-      message='Dashboard link lost'
+    local rows={
+      string.format('V%05.1f E:%s',speed,armed and 'ON' or 'OFF'),
+      string.format('Y%04.0f G%02d/15',altitude,math.floor(throttle*15+0.5)),
+      string.format('P%+d R%+d',math.floor(math.deg(attitude[2])+0.5),
+        math.floor(math.deg(attitude[1])+0.5)),
+      (message or ''):sub(1,15),
+    }
+    for i,row in ipairs(rows) do rows[i]=row:sub(1,15) end
+    local line=table.concat(rows,'\n')
+    if line~=lastDisplay then
+      local ok=pcall(function()
+        for i,row in ipairs(rows) do
+          displayLink.setCursorPos(1,i)
+          displayLink.clearLine()
+          displayLink.write(row)
+        end
+        displayLink.update()
+      end)
+      if ok then
+        lastDisplay=line
+      else
+        displayLink=nil
+        lastDisplay=nil
+        message='Dashboard link lost'
+      end
     end
   end
 end
@@ -304,7 +317,8 @@ local ok,err=pcall(function()
       M.norm(gravity),C.targetThrustToWeight,throttleCap*100))
     print(string.format('Speed limit: fixed %.0f m/s',C.maxSpeed))
     print('Display link: '..(displayLink and displayName or 'not connected'))
-    print(string.format('Aero model: %d sails; pressure %.3f',aeroModel.sailCount,pressure))
+    print(string.format('Aero model: %d providers (%d lifting); pressure %.3f',
+    aeroModel.providerCount,A.liftCount or 0,pressure))
     local _,level=inputs()
     print(string.format('Accumulator: %d/15',math.floor(level*15+0.5)))
     local rate=M.v(sublevel.getAngularVelocity())

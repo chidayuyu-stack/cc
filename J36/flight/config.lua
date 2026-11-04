@@ -23,29 +23,31 @@ return {
   },
   surfaceControl={
     maxAngle=45,
-    pitchGain=1.25,
-    rollGain=1.2,
+    pitchGain=1.5,
+    rollGain=1.5,
     -- The right adapter is reflected across Z, so its output angle is
     -- opposite. Pitch is common-mode; roll is differential.
     leftPitchSign=1,rightPitchSign=-1,
     leftRollSign=-1,rightRollSign=-1,
     surfaceEngageSpeed=3,
     surfaceFullSpeed=18,
-    rollThrustReduction=0.75,
-    pitchThrustReduction=0.30,
-    commandRate=180, -- Maximum commanded surface travel, degrees/second.
+    -- Keep most of the thruster torque at speed so surfaces and gimbals
+    -- work together during aggressive turns and mid-air reversals.
+    rollThrustReduction=0.35,
+    pitchThrustReduction=0.10,
+    commandRate=360, -- Maximum commanded surface travel, degrees/second.
   },
-  targetThrustToWeight=2.5,
+  targetThrustToWeight=2.3,
   maxSpeed=340,
   speedMargin=20,
   period=0.05,
-  rate={math.rad(60),math.rad(25),math.rad(48)}, -- roll, yaw, pitch
-  rateSlew={math.rad(360),math.rad(240),math.rad(360)}, -- Command ramp, deg/s^2.
-  gain={2.0,1.6,2.6},
+  rate={math.rad(100),math.rad(45),math.rad(60)}, -- roll, yaw, pitch
+  rateSlew={math.rad(720),math.rad(480),math.rad(480)}, -- Command ramp, deg/s^2.
+  gain={2.2,2.2,2.3},
   integralGain={0.25,0.3,0.2},
   integralLimit=0.35, -- Fraction of each axis's acceleration limit.
-  acceleration={math.rad(120),math.rad(50),math.rad(90)},
-  rateDeadband=math.rad(0.7),
-  rateTrackDeadband=math.rad(0.6),
+  acceleration={math.rad(240),math.rad(110),math.rad(140)},
+  rateDeadband=math.rad(0.3),
+  rateTrackDeadband=math.rad(0.25),
   solverIterations=160,
 }

@@ -277,17 +277,26 @@ function M.realised(model,outputs)
 end
 -- Compress the rigidly attached Sable lift providers into a body-frame
 -- damping matrix D: [force;torque] = -air_pressure * D * [velocity;omega].
+-- Parallel and directionless drag are linear in velocity, so they fit the
+-- matrix. Wing lift is nonlinear (normal * liftScalar * tangential speed)
+-- and is evaluated per cycle in aeroWrench.
 function M.aeroModel(A,com)
-  assert(type(A)=='table' and type(A.sails)=='table','Missing aero geometry')
-  assert(#A.sails==A.sailCount,'Sail geometry changed; regenerate aero.lua')
-  local model={matrix={},sailCount=#A.sails,config=A}
+  assert(type(A)=='table' and type(A.providers)=='table','Missing aero geometry')
+  assert(#A.providers==A.providerCount,'Provider geometry changed; regenerate aero.lua')
+  local model={matrix={},providers={},providerCount=#A.providers,config=A}
   for row=1,6 do model.matrix[row]={} end
   for row=1,6 do for col=1,6 do model.matrix[row][col]=0 end end
   local unit={{1,0,0},{0,1,0},{0,0,1}}
-  for _,sail in ipairs(A.sails) do
-    local position=M.v(sail.position)
-    local normal=M.v(sail.normal)
+  for _,provider in ipairs(A.providers) do
+    local position=M.v(provider.position)
+    local normal=M.v(provider.normal)
+    local parallelDrag=provider.parallelDrag or A.parallelDrag
+    local lift=provider.lift or 0
+    assert(M.finite(parallelDrag) and parallelDrag>=0,'Invalid parallel drag')
+    assert(M.finite(lift) and lift>=0,'Invalid lift scalar')
+    assert(math.abs(M.norm(normal)-1)<1e-6,'Aero normal must be unit length')
     local r=M.sub(position,com)
+    model.providers[#model.providers+1]={normal=normal,r=r,lift=lift}
     for input=1,6 do
       local velocity
       if input<=3 then velocity=unit[input]
@@ -295,7 +304,7 @@ function M.aeroModel(A,com)
       local normalVelocity=M.dot(normal,velocity)
       local force={}
       for axis=1,3 do
-        force[axis]=A.parallelDrag*normal[axis]*normalVelocity
+        force[axis]=parallelDrag*normal[axis]*normalVelocity
           +A.directionlessDrag*velocity[axis]
       end
       local torque=M.cross(r,force)
@@ -310,13 +319,33 @@ end
 function M.aeroWrench(aero,pressure,velocity,omega)
   assert(M.finite(pressure) and pressure>=0,'Invalid air pressure')
   local state={velocity[1],velocity[2],velocity[3],omega[1],omega[2],omega[3]}
-  local out={}
+  local force,torque={0,0,0},{0,0,0}
   for row=1,6 do
     local sum=0
     for col=1,6 do sum=sum+aero.matrix[row][col]*state[col] end
-    out[row]=-pressure*sum
+    local value=-pressure*sum
+    if row<=3 then force[row]=value else torque[row-3]=value end
   end
-  return {out[1],out[2],out[3]},{out[4],out[5],out[6]}
+  -- Sable lift: force along the provider normal, proportional to the
+  -- tangential speed at that block (including rigid-body rotation) and to
+  -- air pressure. Symmetric sails have lift=0 and contribute only drag.
+  for _,provider in ipairs(aero.providers) do
+    if provider.lift>0 then
+      local pointVelocity=M.add(velocity,M.cross(omega,provider.r))
+      local normalVelocity=M.dot(provider.normal,pointVelocity)
+      local tangential=M.sub(pointVelocity,
+        M.mul(provider.normal,normalVelocity))
+      local strength=provider.lift*M.norm(tangential)*pressure
+      if strength>0 then
+        -- Sable applies linearImpulse -= lift, so the force on the body is
+        -- opposite the configured provider normal.
+        local liftForce=M.mul(provider.normal,strength)
+        force=M.sub(force,liftForce)
+        torque=M.sub(torque,M.cross(provider.r,liftForce))
+      end
+    end
+  end
+  return force,torque
 end
 function M.aeroAdjustedAlpha(c,alpha,torque,inverseInertia,aeroConfig)
   local inverseTorque=M.matvec(inverseInertia,torque)

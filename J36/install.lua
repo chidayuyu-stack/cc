@@ -3,7 +3,7 @@ local files = {
   {name = "config.lua", marker = "engineGate"},
   {name = "core.lua", marker = "aeroModel"},
   {name = "pilot.lua", marker = "THREE-ENGINE FIGHTER"},
-  {name = "aero.lua", marker = "sailCount ="},
+  {name = "aero.lua", marker = "providerCount ="},
 }
 local downloaded = {}
 local startupProgram
